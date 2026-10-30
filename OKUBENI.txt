@@ -1,0 +1,27 @@
+SHERCAN Kimya (PWA)
+===================
+
+Klasördeki dosyalar:
+  index.html, app.js, app.css  -> uygulamanın kendisi
+  sw.js, manifest.webmanifest  -> çevrimdışı çalışma ve telefona kurulum
+  veri/9.json, 10.json, 11.json -> soru bankası testleri (sorular, cevaplar, çözümler)
+  veri/etk9.json ...            -> etkinlik kitapları
+  konu/<sınıf>/<ünite>.html     -> konu anlatımları
+  img/                          -> soru şekilleri ve kavram haritaları
+  icons/                        -> logo ve uygulama simgeleri
+
+Bilgisayarda denemek:
+  index.html'e çift tıklamak yetmez; tarayıcılar dosyadan açılan sayfada
+  verileri yüklemez. Klasörde bir terminal açıp şunu çalıştır:
+      python -m http.server 8000
+  sonra tarayıcıda http://localhost:8000 adresini aç.
+
+Yayınlamak (kimyamed gibi GitHub Pages ile):
+  1. GitHub'da yeni bir depo aç (ör. shercan-kimya).
+  2. Bu klasörün içindeki her şeyi depoya yükle.
+  3. Settings > Pages > Branch: main, klasör: / (root) seç, kaydet.
+  4. Birkaç dakika sonra https://KULLANICIADI.github.io/shercan-kimya/ adresinde açılır.
+  Telefonda bu adresi açınca "Ana ekrana ekle" ile uygulama gibi kurulur.
+
+İçeriği değiştirdikten sonra sw.js içindeki SURUM değerini artır
+(ör. "shercan-v3"); yoksa kurulu telefonlar eski sürümü göstermeye devam eder.

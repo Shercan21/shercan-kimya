@@ -1,0 +1,116 @@
+<section id="k-1-2-1">
+<h2><span class="k">1.2.1</span>Gazların Özellikleri</h2>
+<p>Gaz tanecikleri arasındaki uzaklık tanecik boyutlarına göre çok büyüktür ve çekim kuvvetleri çok zayıftır. Bu yüzden gazlar:</p>
+<ul>
+<li>Belirli bir şekil ve hacimleri yoktur; bulundukları kabı tamamen doldurur.</li>
+<li>Kolayca sıkıştırılabilir ve genleşebilir; yoğunlukları sıvı ve katılardan çok küçüktür.</li>
+<li>Birbiriyle her oranda karışarak homojen karışım oluşturur (difüzyon).</li>
+<li>Tanecikler sürekli, rastgele ve doğrusal hareket eder; kabın çeperine çarparak <b>basınç</b> oluşturur.</li>
+</ul>
+<h3>Gazı tanımlayan dört değişken</h3>
+<div class="tablo-sar"><table>
+<tr><th>Değişken</th><th>Sembol</th><th>Birimler</th></tr>
+<tr><td>Basınç</td><td>P</td><td>atm, mmHg, cmHg, Pa; 1 atm = 76 cmHg = 760 mmHg = 101 325 Pa</td></tr>
+<tr><td>Hacim</td><td>V</td><td>L, mL, cm³; 1 L = 1000 mL = 1 dm³</td></tr>
+<tr><td>Sıcaklık</td><td>T</td><td>Kelvin; T(K) = t(°C) + 273</td></tr>
+<tr><td>Madde miktarı</td><td>n</td><td>mol</td></tr>
+</table></div>
+<ul>
+<li>Açık hava basıncı <b>barometre</b> ile (Torricelli, deniz seviyesinde 76 cm cıva), kapalı kaptaki gaz basıncı <b>manometre</b> ile ölçülür.</li>
+<li>Yükseklere çıkıldıkça hava basıncı azalır.</li>
+<li>Gaz hesaplarında sıcaklık her zaman <b>Kelvin</b> cinsinden kullanılır. 0 K (−273 °C) mutlak sıfırdır.</li>
+</ul>
+<div class="ornek"><b>Çözümlü örnek</b>
+<p>Açık uçlu bir manometrede gaz tarafındaki cıva seviyesi, açık uçtaki seviyeden 10 cm daha aşağıdadır. Açık hava basıncı 76 cmHg ise gazın basıncı kaçtır?</p>
+<details><summary>Çözümü göster</summary>
+<p>Gaz cıvayı açık uca doğru itmiş, yani gaz basıncı açık hava basıncından büyüktür: P<sub>gaz</sub> = 76 + 10 = <b>86 cmHg</b>.</p></details>
+</div>
+<div class="testbag" data-kod="1.2.1"></div>
+</section>
+
+<section id="k-1-2-2-A">
+<h2><span class="k">1.2.2-A</span>Gaz Yasaları: Boyle, Charles ve Avogadro</h2>
+<div class="tablo-sar"><table>
+<tr><th>Yasa</th><th>Sabit tutulan</th><th>İlişki</th><th>Formül</th></tr>
+<tr><td>Boyle</td><td>n ve T</td><td>Basınç artarsa hacim azalır (ters orantı)</td><td>P<sub>1</sub>V<sub>1</sub> = P<sub>2</sub>V<sub>2</sub></td></tr>
+<tr><td>Charles</td><td>n ve P</td><td>Mutlak sıcaklık artarsa hacim artar (doğru orantı)</td><td>V<sub>1</sub>/T<sub>1</sub> = V<sub>2</sub>/T<sub>2</sub></td></tr>
+<tr><td>Avogadro</td><td>P ve T</td><td>Mol sayısı artarsa hacim artar (doğru orantı)</td><td>V<sub>1</sub>/n<sub>1</sub> = V<sub>2</sub>/n<sub>2</sub></td></tr>
+</table></div>
+<figure>
+<svg viewBox="0 0 330 140" width="330" role="img" aria-label="Boyle grafiği: P artarken V hiperbol şeklinde azalır. Charles grafiği: V ile Kelvin sıcaklığı orijinden geçen doğru">
+<g stroke="currentColor" fill="none" stroke-width="1.5">
+<path d="M20 10 V120 H150"/><path d="M180 10 V120 H310"/>
+<path d="M32 20 C45 85, 80 105, 145 112" stroke="#1F4FD8" stroke-width="2.5"/>
+<path d="M180 120 L300 25" stroke="#E0312B" stroke-width="2.5"/>
+</g>
+<text x="12" y="20" font-size="12">V</text><text x="148" y="134" font-size="12">P</text>
+<text x="172" y="20" font-size="12">V</text><text x="290" y="134" font-size="12">T (K)</text>
+<text x="85" y="40" font-size="12" text-anchor="middle">Boyle</text><text x="245" y="110" font-size="12" text-anchor="middle">Charles</text>
+</svg>
+</figure>
+<div class="dikkat">Charles yasasında orantı <b>Kelvin</b> ile kurulur. Sıcaklık 20 °C'den 40 °C'ye çıkınca hacim iki katına çıkmaz; 293 K'den 313 K'ye çıktığı için yalnız 313/293 katına çıkar. Grafik °C ile çizilirse doğru −273 °C'de hacim eksenini keser.</div>
+<div class="ornek"><b>Çözümlü örnek</b>
+<p>27 °C'de 6 L hacim kaplayan gaz, sabit basınçta 127 °C'ye ısıtılıyor. Son hacim kaç L olur?</p>
+<details><summary>Çözümü göster</summary>
+<p>T<sub>1</sub> = 300 K, T<sub>2</sub> = 400 K. V<sub>2</sub> = V<sub>1</sub> × T<sub>2</sub>/T<sub>1</sub> = 6 × 400/300 = <b>8 L</b>.</p></details>
+</div>
+<div class="testbag" data-kod="1.2.2-A"></div>
+</section>
+
+<section id="k-1-2-2-B">
+<h2><span class="k">1.2.2-B</span>Basınç–Sıcaklık, Birleşik Gaz Yasası ve Kinetik Molekül Teorisi</h2>
+<h3>Gay-Lussac (basınç–sıcaklık) yasası</h3>
+<p>Hacim ve mol sabitken bir gazın basıncı mutlak sıcaklıkla doğru orantılıdır. Yazın şişirilmiş lastiğin basıncının artması, kapalı spreyin ısınınca patlama tehlikesi bundan kaynaklanır.</p>
+<div class="formul">P<sub>1</sub>/T<sub>1</sub> = P<sub>2</sub>/T<sub>2</sub> &nbsp;&nbsp;&nbsp; Birleşik: P<sub>1</sub>V<sub>1</sub>/T<sub>1</sub> = P<sub>2</sub>V<sub>2</sub>/T<sub>2</sub><small>Birleşik gaz yasası, mol sayısı sabitken üç değişkenin birlikte değiştiği durumlarda kullanılır.</small></div>
+<h3>Kinetik molekül teorisi (KMT)</h3>
+<ul>
+<li>Gazlar çok sayıda, sürekli ve rastgele hareket eden taneciklerden oluşur.</li>
+<li>Taneciklerin kendi hacmi, kabın hacmi yanında ihmal edilebilir.</li>
+<li>Tanecikler arasında çekim ya da itme yoktur (ideal gaz kabulü).</li>
+<li>Çarpışmalar esnektir; toplam kinetik enerji korunur.</li>
+<li>Ortalama kinetik enerji <b>yalnız mutlak sıcaklıkla</b> doğru orantılıdır. Aynı sıcaklıkta bütün gazların ortalama kinetik enerjisi eşittir.</li>
+</ul>
+<p>KMT gaz yasalarını açıklar: Isınan gazın tanecikleri hızlanır, çarpmalar sıklaşır ve şiddetlenir. Hacim sabitse basınç artar (Gay-Lussac), basınç sabitse gaz genleşir (Charles).</p>
+<div class="ornek"><b>Çözümlü örnek</b>
+<p>Bir gazın basıncı 2 atm, hacmi 4 L, sıcaklığı 200 K'dir. Basınç 3 atm'ye, sıcaklık 600 K'ye çıkarılırsa hacim kaç L olur?</p>
+<details><summary>Çözümü göster</summary>
+<p>P<sub>1</sub>V<sub>1</sub>/T<sub>1</sub> = P<sub>2</sub>V<sub>2</sub>/T<sub>2</sub> → 2 × 4 / 200 = 3 × V<sub>2</sub> / 600 → V<sub>2</sub> = 8 × 600 / (200 × 3) = <b>8 L</b>.</p></details>
+</div>
+<div class="testbag" data-kod="1.2.2-B"></div>
+</section>
+
+<section id="k-1-2-3">
+<h2><span class="k">1.2.3</span>İdeal Gaz Yasası</h2>
+<p>Boyle, Charles, Gay-Lussac ve Avogadro yasaları tek bir denklemde birleşir:</p>
+<div class="formul">P × V = n × R × T<small>R = 0,082 L·atm/(mol·K) &nbsp;(P atm, V litre, T kelvin olmalı)</small></div>
+<ul>
+<li><b>Normal şartlar (NŞA):</b> 0 °C (273 K) ve 1 atm. Bu koşulda 1 mol ideal gaz <b>22,4 L</b> hacim kaplar.</li>
+<li><b>Oda koşulları:</b> 25 °C ve 1 atm; 1 mol gaz yaklaşık 24,5 L kaplar.</li>
+<li>Denklemden yoğunluk da bulunabilir: d = P × M<sub>A</sub> / (R × T).</li>
+</ul>
+<div class="tanim"><b>İdeal ve gerçek gaz:</b> İdeal gazda tanecik hacmi ve tanecikler arası etkileşim yok sayılır. Gerçek gazlar <b>yüksek sıcaklık ve düşük basınçta</b> ideale yaklaşır; düşük sıcaklık ve yüksek basınçta idealden sapar (tanecikler yakınlaşır, çekim önem kazanır). He ve H<sub>2</sub> gibi küçük, apolar gazlar ideale en yakın davranır.</div>
+<div class="ornek"><b>Çözümlü örnek</b>
+<p>127 °C'de 8,2 L'lik kapta 0,5 mol gaz vardır. Gazın basıncı kaç atm'dir?</p>
+<details><summary>Çözümü göster</summary>
+<p>T = 400 K. P = nRT/V = 0,5 × 0,082 × 400 / 8,2 = 16,4 / 8,2 = <b>2 atm</b>.</p></details>
+</div>
+<div class="testbag" data-kod="1.2.3"></div>
+</section>
+
+<section id="k-1-2-4">
+<h2><span class="k">1.2.4</span>Graham Difüzyon ve Efüzyon Yasası</h2>
+<div class="tanim"><b>Difüzyon:</b> Gaz taneciklerinin kendiliğinden yayılarak başka bir gazla karışması (parfüm kokusunun odaya yayılması).<br><b>Efüzyon:</b> Gazın çok küçük bir delikten boşluğa ya da düşük basınçlı ortama sızması (balonun zamanla sönmesi).</div>
+<p>Aynı sıcaklıkta bütün gazların ortalama kinetik enerjisi eşittir (½mv²). Bu yüzden <b>hafif gazlar daha hızlı</b> hareket eder.</p>
+<div class="formul">v<sub>1</sub> / v<sub>2</sub> = √(M<sub>2</sub> / M<sub>1</sub>)<small>Aynı sıcaklıkta yayılma hızları mol kütlelerinin karekökü ile ters orantılıdır.</small></div>
+<ul>
+<li>Sıcaklık arttıkça bütün gazların hızı artar.</li>
+<li>Uzun bir borunun iki ucundan NH<sub>3</sub> (17) ve HCl (36,5) gönderilirse beyaz NH<sub>4</sub>Cl halkası HCl ucuna daha yakın oluşur, çünkü NH<sub>3</sub> daha hızlıdır.</li>
+<li>Helyumla şişirilmiş balon, havayla şişirilmiş balondan daha çabuk söner.</li>
+</ul>
+<div class="ornek"><b>Çözümlü örnek</b>
+<p>Aynı sıcaklıkta He gazının yayılma hızı CH<sub>4</sub> gazının hızının kaç katıdır? (He 4, CH<sub>4</sub> 16 g/mol)</p>
+<details><summary>Çözümü göster</summary>
+<p>v<sub>He</sub> / v<sub>CH₄</sub> = √(16 / 4) = √4 = <b>2</b>. He, metandan 2 kat hızlı yayılır.</p></details>
+</div>
+<div class="testbag" data-kod="1.2.4"></div>
+</section>
