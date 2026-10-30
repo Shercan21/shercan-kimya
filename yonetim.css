@@ -77,3 +77,6 @@ main.yon{max-width:1040px;padding-bottom:120px}
 .yon code{font-size:.9em;background:var(--hidrojen);padding:1px 5px;border-radius:5px}
 .yon .dugme{width:auto;display:inline-flex;align-items:center;justify-content:center;flex:none;margin:0}
 .yon-oge .govde small{display:block}
+.yon .dugme.yon-resim{margin-top:6px}
+.yon-kucukresim{display:block;max-width:240px;max-height:160px;margin-top:6px;border:1px solid var(--cizgi);border-radius:var(--r-kucuk);background:#fff}
+.yon-onizle img{max-width:100%;height:auto}

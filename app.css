@@ -389,3 +389,7 @@ sub,sup{font-size:.72em;line-height:0}
 .ycevap{grid-column:2 / 4;background:color-mix(in srgb,var(--kukurt) 13%,var(--yuzey));border-left:3px solid var(--kukurt);padding:8px 10px;border-radius:0 var(--r-kucuk) var(--r-kucuk) 0;font-size:15px;animation:ac .25s ease-out}
 .ycevap-dugme{margin-top:12px;padding:11px}
 .cip.pasif{opacity:.45;cursor:default}
+
+/* öğretmenin panelden eklediği resimler */
+main img{max-width:100%;height:auto}
+.ybaglam img,.ymadde img{display:block;margin:8px auto;max-height:420px;object-fit:contain}

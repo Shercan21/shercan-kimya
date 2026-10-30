@@ -69,6 +69,8 @@ async function commitle(repo, degisiklikler, mesaj, ilerleme = () => {}) {
     if (d.kaynakSha) {
       const b = await gh(`/repos/${SAHIP}/${KAYNAK}/git/blobs/${d.kaynakSha}`);
       blob = await gh(`/repos/${SAHIP}/${repo}/git/blobs`, { method: "POST", body: { content: b.content.replace(/\n/g, ""), encoding: "base64" } });
+    } else if (d.b64) {
+      blob = await gh(`/repos/${SAHIP}/${repo}/git/blobs`, { method: "POST", body: { content: d.b64, encoding: "base64" } });
     } else {
       blob = await gh(`/repos/${SAHIP}/${repo}/git/blobs`, { method: "POST", body: { content: d.metin, encoding: "utf-8" } });
     }
@@ -147,6 +149,72 @@ async function kaynagaKaydetVeYayinla(degisiklikler, mesaj) {
   await yayinla(await aktifYazililar());
 }
 
+/* ---------------- resimler ----------------
+   Site resimleri shercan-kimya/img/yukle/ altına, yazılı resimleri gizli depoda resim/ altına yüklenir.
+   Yazılı resimleri sınav üretilirken soruların içine gömülür; yazılı açılmadan sitede görünmez. */
+const resimOnbellek = {};   /* yol -> data: adresi (önizleme için) */
+function dosyaSec() {
+  return new Promise(r => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = () => r(i.files[0] || null); i.click(); });
+}
+async function resimKucult(dosya, enBuyuk = 1400) {
+  if (dosya.type === "image/svg+xml") return { blob: dosya, uzanti: "svg" };
+  const bm = await createImageBitmap(dosya);
+  const o = Math.min(1, enBuyuk / bm.width);
+  const c = document.createElement("canvas");
+  c.width = Math.round(bm.width * o); c.height = Math.round(bm.height * o);
+  c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
+  let blob = await new Promise(r => c.toBlob(r, "image/webp", 0.86));
+  if (!blob || blob.type !== "image/webp") blob = await new Promise(r => c.toBlob(r, "image/png"));
+  return { blob, uzanti: blob.type === "image/webp" ? "webp" : "png" };
+}
+const blobB64 = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+async function resimYukle(gizli, klasor) {
+  const dosya = await dosyaSec();
+  if (!dosya) return null;
+  if (dosya.size > 15e6) { alert("Resim çok büyük (en çok 15 MB)."); return null; }
+  durum("Resim yükleniyor…");
+  try {
+    const { blob, uzanti } = await resimKucult(dosya);
+    const veriUrl = await blobB64(blob);
+    const ad = dosya.name.replace(/\.[^.]+$/, "").toLocaleLowerCase("tr").replace(/[^a-z0-9ğüşöçı]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "resim";
+    const yol = `${klasor}/${Date.now().toString(36)}-${ad}.${uzanti}`;
+    await commitle(gizli ? KAYNAK : SITE, [{ yol, b64: veriUrl.split(",")[1] }], "Resim eklendi: " + yol);
+    resimOnbellek[yol] = veriUrl;
+    durum("Resim yüklendi.", "tamam", 3000);
+    return yol;
+  } catch (h) { durum("Resim yüklenemedi: " + h.message, "hata"); return null; }
+}
+function imleceEkle(alan, metin) {
+  const b = alan.selectionStart ?? alan.value.length, s = alan.selectionEnd ?? b;
+  alan.value = alan.value.slice(0, b) + metin + alan.value.slice(s);
+  alan.selectionStart = alan.selectionEnd = b + metin.length;
+  alan.dispatchEvent(new Event("input", { bubbles: true }));
+  alan.focus();
+}
+/* Metin kutusunun altına "Resim ekle" düğmesi koyar; seçilen resmi yükleyip <img> etiketini imlecin olduğu yere yazar */
+function resimDugmesi(alan, gizli, klasor, kalip = y => `<img src="${y}" alt="">`) {
+  const d = document.createElement("button");
+  d.type = "button"; d.className = "dugme ikincil kucuk yon-resim"; d.textContent = "🖼 Resim ekle";
+  d.addEventListener("click", async () => { const y = await resimYukle(gizli, klasor); if (y) imleceEkle(alan, kalip(y)); });
+  alan.after(d);
+  return d;
+}
+/* Önizlemede, yeni yüklenen ya da gizli depodaki resimleri göster */
+async function gizliResimAl(yol) {
+  if (resimOnbellek[yol]) return;
+  resimOnbellek[yol] = "";
+  try {
+    const r = await fetch(`${API}/repos/${SAHIP}/${KAYNAK}/contents/${yol}?ref=main`, { cache: "no-store", headers: { Authorization: "Bearer " + anahtar, Accept: "application/vnd.github.raw+json" } });
+    if (r.ok) resimOnbellek[yol] = await blobB64(await r.blob());
+  } catch {}
+}
+function resimCoz(html, gizli) {
+  return String(html).replace(/src="([^"]+)"/g, (t, y) => {
+    if (resimOnbellek[y]) return `src="${resimOnbellek[y]}"`;
+    return t;
+  });
+}
+
 /* ---------------- ortak parçalar ---------------- */
 async function islem(dugme, is, basari = "Kaydedildi. Sitede 1–2 dakika içinde görünür.") {
   if (dugme) dugme.disabled = true;
@@ -163,8 +231,14 @@ function kaydetCubugu(metin = "Kaydedilmemiş değişiklikler var.") {
 function degisti() { kirli = true; $("#kaydetcubuk")?.classList.remove("gizli"); }
 const yukleniyor = () => { ekran.innerHTML = `<p class="bos">Yükleniyor…</p>`; };
 function hataGoster(h) { ekran.innerHTML = `<div class="yon-kutu"><b>Yüklenemedi.</b><p>${esc(h.message || h)}</p></div>`; }
-function onizle(alan, kutu, sarmala = x => x) {
-  const g = () => { kutu.innerHTML = sarmala(alan.value); };
+function onizle(alan, kutu, sarmala = x => x, gizli = false) {
+  const g = () => {
+    kutu.innerHTML = resimCoz(sarmala(alan.value), gizli);
+    if (gizli) {
+      const eksik = [...alan.value.matchAll(/src="(resim\/[^"]+)"/g)].map(m => m[1]).filter(y => resimOnbellek[y] === undefined);
+      if (eksik.length) Promise.all(eksik.map(gizliResimAl)).then(g);
+    }
+  };
   alan.addEventListener("input", g); g();
 }
 function otomatikBoy(t) { const f = () => { t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight + 4, 640) + "px"; }; t.addEventListener("input", f); requestAnimationFrame(f); }
@@ -354,7 +428,8 @@ async function sorularSayfasi(g, secKaz) {
       <p class="alt">Puanlar sınavda kendiliğinden 100'e ölçeklenir; burada maddeler arasındaki oran önemlidir. Alt simge: <code>H&lt;sub&gt;2&lt;/sub&gt;O</code>, üst simge: <code>10&lt;sup&gt;−3&lt;/sup&gt;</code></p>
       <div class="yon-arac"><button class="dugme vurgu" id="tamam">Soruyu listeye ekle</button><button class="dugme ikincil" id="vazgec">Vazgeç</button></div></div>`;
     $("#tamam").textContent = i >= 0 ? "Değişikliği uygula" : "Soruyu listeye ekle";
-    onizle($("#fbag"), $("#fon"));
+    onizle($("#fbag"), $("#fon"), x => x, true);
+    resimDugmesi($("#fbag"), true, "resim");
     const oku_ = () => {
       q.kaz = $("#fkaz").value.trim(); q.baglam = $("#fbag").value;
       $$("#maddeler .yon-madde").forEach((d, j) => {
@@ -366,6 +441,7 @@ async function sorularSayfasi(g, secKaz) {
     const bagla = () => {
       $$("[data-msil]").forEach(b => b.addEventListener("click", () => { oku_(); q.maddeler.splice(+b.dataset.msil, 1); $("#maddeler").innerHTML = maddeCiz(); bagla(); }));
       $$("#maddeler textarea").forEach(otomatikBoy);
+      $$('#maddeler textarea[data-a="s"]').forEach(t => resimDugmesi(t, true, "resim"));
     };
     bagla();
     $("#madde-ekle").addEventListener("click", () => {
@@ -401,17 +477,20 @@ async function senaryolarSayfasi(g) {
   const liste = senaryo[g];
   const kazanimlar = () => [...new Set(Object.values(senaryo).flat().flatMap(e => e.dagilim.map(d => d[0])).filter(t => t.includes(`.${g}.`)))].sort((a, b) => a.localeCompare(b, "tr", { numeric: true }));
   const sirala = () => liste.sort((a, b) => (a.donem - b.donem) || (a.yazili - b.yazili) || (a.senaryo - b.senaryo));
+  let donemSec = +(depo.al("senDonem") || 1);
 
   function ciz() {
     sirala();
     const { ger } = gerekenler(senaryo, g);
     const eksik = Object.keys(ger).filter(k => (havuzSay[k] || 0) < ger[k]);
     const gruplar = {};
-    liste.forEach((e, i) => (gruplar[`${e.donem}-${e.yazili}`] = gruplar[`${e.donem}-${e.yazili}`] || []).push({ e, i }));
+    liste.forEach((e, i) => e.donem === donemSec && (gruplar[`${e.donem}-${e.yazili}`] = gruplar[`${e.donem}-${e.yazili}`] || []).push({ e, i }));
     ekran.innerHTML = `
       <h1>Senaryolar</h1>
       <p class="alt">MEB ortak yazılı senaryoları. Her senaryo bir sınavdır; satırlar o sınavda hangi kazanımdan kaç soru olacağını gösterir. Yeni eklenen yazılı, siz <a href="#/yazililar">Yazılı aç/kapat</a> sekmesinden açana kadar öğrenciye görünmez.</p>
-      <div class="yon-arac">${sinifSecici(g)}<button class="dugme" id="yeni">+ Yeni senaryo</button></div>
+      <div class="yon-arac">${sinifSecici(g)}
+        <div class="cipler" style="margin:0">${[1, 2].map(d => `<button class="cip${d === donemSec ? " secili" : ""}" data-donem="${d}">${d}. Dönem · ${liste.filter(e => e.donem === d).length}</button>`).join("")}</div>
+        <button class="dugme" id="yeni">+ Yeni senaryo</button></div>
       ${eksik.length ? `<div class="yon-kutu" style="border-color:var(--oksijen)"><b>Soru havuzu yetersiz:</b> ${eksik.map(k => `<a href="#/sorular/${g}/${encodeURIComponent(k)}">${esc(k)}</a> (${havuzSay[k] || 0}/${ger[k]})`).join(", ")}. Bu kazanımlarda sorular sınavlarda tekrar eder.</div>` : ""}
       ${Object.entries(gruplar).map(([k, xs]) => `<h2>${k.split("-")[0]}. Dönem ${k.split("-")[1]}. Yazılı</h2>
         <div class="yon-liste">${xs.map(({ e, i }) => `<div class="yon-oge"><span class="no">S${e.senaryo}</span>
@@ -419,13 +498,14 @@ async function senaryolarSayfasi(g) {
           <small>${e.dagilim.reduce((a, d) => a + d[1], 0)} soru</small></div>
           <button class="dugme ikincil kucuk" data-duzenle="${i}">Düzenle</button>
           <button class="dugme ikincil kucuk" data-kopya="${i}">Kopyala</button>
-          <button class="dugme tehlike kucuk" data-sil="${i}">Sil</button></div>`).join("")}</div>`).join("") || `<p class="bos">Bu sınıfta senaryo yok.</p>`}
+          <button class="dugme tehlike kucuk" data-sil="${i}">Sil</button></div>`).join("")}</div>`).join("") || `<p class="bos">${donemSec}. dönem için henüz senaryo yok. “+ Yeni senaryo” ile ekleyin; isterseniz 1. dönemden bir senaryoyu “Kopyala” ile alıp dönemini değiştirin.</p>`}
       <div id="duzenleyici"></div>
       <datalist id="kazliste">${kazanimlar().map(t => `<option value="${esc(t)}">`).join("")}</datalist>
       ${kaydetCubugu()}`;
     if (kirli) $("#kaydetcubuk").classList.remove("gizli");
     sinifDegisince($("#sinif"), v => `#/senaryolar/${v}`);
     $("#yeni").addEventListener("click", () => duzenle(-1));
+    $$("[data-donem]").forEach(c => c.addEventListener("click", () => { donemSec = +c.dataset.donem; depo.koy("senDonem", donemSec); ciz(); }));
     $$("[data-duzenle]").forEach(d => d.addEventListener("click", () => duzenle(+d.dataset.duzenle)));
     $$("[data-kopya]").forEach(d => d.addEventListener("click", () => {
       const e = kopya(liste[+d.dataset.kopya]);
@@ -445,8 +525,8 @@ async function senaryolarSayfasi(g) {
   }
 
   function duzenle(i) {
-    const son = liste[liste.length - 1];
-    const e = i >= 0 ? kopya(liste[i]) : { donem: son?.donem || 1, yazili: son?.yazili || 1, senaryo: 1, dagilim: [["", 1]] };
+    const son = liste.filter(x => x.donem === donemSec).pop();
+    const e = i >= 0 ? kopya(liste[i]) : { donem: donemSec, yazili: son?.yazili || 1, senaryo: 1, dagilim: [["", 1]] };
     if (i < 0) e.senaryo = Math.max(0, ...liste.filter(x => x.donem === e.donem && x.yazili === e.yazili).map(x => x.senaryo)) + 1;
     const kutu = $("#duzenleyici");
     const satirlar = () => e.dagilim.map(([t, n], j) => `<div class="yon-satir" style="margin:6px 0" data-j="${j}">
@@ -484,6 +564,7 @@ async function senaryolarSayfasi(g) {
       const cakisan = liste.findIndex((x, k) => k !== i && x.donem === e.donem && x.yazili === e.yazili && x.senaryo === e.senaryo);
       if (cakisan >= 0) return alert("Bu dönem/yazılı için aynı numarada bir senaryo zaten var.");
       if (i >= 0) liste[i] = e; else liste.push(e);
+      donemSec = e.donem; depo.koy("senDonem", donemSec);
       degisti(); ciz();
     });
     $("#senform").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -546,6 +627,7 @@ async function konuSayfasi(g, dosya) {
       <p class="alt">Sık kullanılanlar: <code>&lt;h3&gt;Alt başlık&lt;/h3&gt;</code> · <code>&lt;div class="tanim"&gt;…&lt;/div&gt;</code> · <code>&lt;div class="formul"&gt;…&lt;/div&gt;</code> · <code>&lt;b&gt;kalın&lt;/b&gt;</code></p>
       <div class="yon-arac"><button class="dugme vurgu" id="tamam">Değişikliği uygula</button><button class="dugme ikincil" id="vazgec">Vazgeç</button></div></div>`;
     onizle($("#fhtml"), $("#fon"));
+    resimDugmesi($("#fhtml"), false, `img/yukle/${g}`, y => `\n<figure><img src="${y}" alt=""><figcaption>Açıklama</figcaption></figure>\n`);
     $("#vazgec").addEventListener("click", () => { kutu.innerHTML = ""; });
     $("#tamam").addEventListener("click", () => {
       const v = $("#fhtml").value.trim();
@@ -634,7 +716,9 @@ async function testSayfasi(g, karmaMi, bolumId) {
       <label class="alan" for="fz">Zorluk</label><select class="dar" id="fz">${SEVIYELER.map(z => `<option${z === q.z ? " selected" : ""}>${z}</option>`).join("")}</select>
       <div class="yon-arac"><button class="dugme vurgu" id="tamam">${i >= 0 ? "Değişikliği uygula" : "Soruyu ekle"}</button><button class="dugme ikincil" id="vazgec">Vazgeç</button></div></div>`;
     onizle($("#fs"), $("#fon"));
+    resimDugmesi($("#fs"), false, `img/yukle/${g}`);
     otomatikBoy($("#fc"));
+    resimDugmesi($("#fc"), false, `img/yukle/${g}`);
     $("#vazgec").addEventListener("click", () => { kutu.innerHTML = ""; });
     $("#tamam").addEventListener("click", () => {
       q.s = $("#fs").value.trim(); q.sik = $$("[data-sik]").map(x => x.value.trim());
@@ -706,6 +790,16 @@ function formYap(kap, deger, degisince) {
       kutu.innerHTML = `<label class="alan">${esc(ad)}</label>${uzun ? `<textarea>${esc(v)}</textarea>` : `<input type="text" value="${esc(v)}">`}`;
       const g = $("input,textarea", kutu); g.oninput = e => yaz(e.target.value);
       if (uzun) otomatikBoy(g);
+      if (ad === ALAN_AD.gorsel) {
+        const d = document.createElement("button"); d.type = "button"; d.className = "dugme ikincil kucuk yon-resim"; d.textContent = "🖼 Resim seç";
+        d.onclick = async () => { const y = await resimYukle(false, formYap.klasor); if (y) { g.value = y; yaz(y); } };
+        const on = document.createElement("img"); on.className = "yon-kucukresim"; on.alt = "";
+        const goster = () => { on.src = resimOnbellek[g.value] || g.value; on.hidden = !g.value; };
+        g.addEventListener("input", goster); d.addEventListener("click", () => setTimeout(goster, 0)); goster();
+        kutu.append(d, on);
+      } else if (formYap.resimli) {
+        g.addEventListener("focus", () => { formYap.sonAlan = g; });
+      }
     }
     return kutu;
   };
@@ -715,6 +809,7 @@ function formYap(kap, deger, degisince) {
 
 async function etkinlikSayfasi(g, kod) {
   g = +g || 9;
+  formYap.klasor = `img/etk/${g}`; formYap.resimli = true;
   yukleniyor();
   const yol = `veri/etk${g}.json`;
   const veri = await okuJSON(SITE, yol);
@@ -764,10 +859,18 @@ async function etkinlikSayfasi(g, kod) {
     const e = k.etkinlikler[i];
     const kutu = $("#duzenleyici");
     kutu.innerHTML = `<div class="yon-kutu" id="etkform"><h2 style="margin-top:0">${ETK_TUR[e.tur] || e.tur} · ${e.no ?? i + 1}</h2>
-      <p class="alt">Alanlar doğrudan etkinliği değiştirir. Bitince aşağıdaki “Kaydet ve yayınla”ya basın.</p>
+      <p class="alt">Alanlar doğrudan etkinliği değiştirir. Bitince aşağıdaki “Kaydet ve yayınla”ya basın.
+        Bir metnin içine resim koymak için önce o metin kutusuna tıklayın, sonra “Resim ekle”ye basın.</p>
+      <div class="yon-arac"><button type="button" class="dugme ikincil kucuk" id="etkresim">🖼 Resim ekle</button></div>
       <div id="etkalan"></div><div class="yon-arac"><button class="dugme ikincil" id="kapat">Kapat</button></div></div>`;
     const cizForm = () => formYap($("#etkalan"), e, yapisal => { degisti(); if (yapisal) cizForm(); });
     cizForm();
+    $("#etkresim").addEventListener("click", async () => {
+      const alan = formYap.sonAlan;
+      if (!alan || !document.contains(alan)) return alert("Önce resmin gireceği metin kutusuna tıklayın.");
+      const y = await resimYukle(false, `img/etk/${g}`);
+      if (y) imleceEkle(alan, `<img src="${y}" alt="">`);
+    });
     $("#kapat").addEventListener("click", () => { kutu.innerHTML = ""; ciz(); });
     $("#etkform").scrollIntoView({ behavior: "smooth", block: "start" });
   }
