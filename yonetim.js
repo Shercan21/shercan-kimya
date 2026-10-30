@@ -356,7 +356,7 @@ function gerekenler(senaryo, g) {
   return { ger, ad };
 }
 
-async function sorularSayfasi(g, secKaz) {
+async function sorularSayfasi(g, secKaz, acSira) {
   g = +g || 9;
   yukleniyor();
   const [metin, senaryo] = await Promise.all([oku(KAYNAK, `yazili/${g}.txt`).catch(h => h.durum === 404 ? "" : Promise.reject(h)), okuJSON(KAYNAK, "senaryo.json")]);
@@ -394,6 +394,11 @@ async function sorularSayfasi(g, secKaz) {
       const k = prompt("Kazanım kodu (ör. KİM.11.2.4):", `KİM.${g}.`);
       if (k && k.trim()) { kaz = k.trim(); ciz(); }
     });
+    if (acSira !== undefined) {
+      const hedef = havuz.bloklar.map((b, i) => ({ b, i })).filter(x => x.b.kaz === kaz)[+acSira];
+      acSira = undefined;
+      if (hedef) duzenle(hedef.i);
+    }
     $$("[data-sil]").forEach(d => d.addEventListener("click", () => {
       if (!confirm("Bu soru silinsin mi?")) return;
       havuz.bloklar.splice(+d.dataset.sil, 1); degisti(); ciz();
@@ -471,8 +476,13 @@ async function sorularSayfasi(g, secKaz) {
 async function senaryolarSayfasi(g) {
   g = +g || 9;
   yukleniyor();
-  const [senaryo, metin] = await Promise.all([okuJSON(KAYNAK, "senaryo.json"), oku(KAYNAK, `yazili/${g}.txt`).catch(() => "")]);
-  const havuzSay = {}; havuzCoz(metin).bloklar.forEach(b => havuzSay[b.kaz] = (havuzSay[b.kaz] || 0) + 1);
+  const [senaryo, metin, uretilen] = await Promise.all([okuJSON(KAYNAK, "senaryo.json"), oku(KAYNAK, `yazili/${g}.txt`).catch(() => ""),
+    okuJSON(KAYNAK, `cikti/veri/yazili${g}.json`).catch(() => ({ sinavlar: [] }))]);
+  const havuz = havuzCoz(metin).bloklar;
+  const havuzSay = {}; havuz.forEach(b => havuzSay[b.kaz] = (havuzSay[b.kaz] || 0) + 1);
+  const imza = h => metinOzet(String(h).replace(/src="data:[^"]+"/g, ""), 120);
+  /* sınavdaki sorunun havuzdaki sırasını bul (düzenleme bağlantısı için) */
+  const havuzSira = q => { const im = imza(q.baglam); const ayni = havuz.map((b, i) => ({ b, i })).filter(x => x.b.kaz === q.kazanim); const k = ayni.findIndex(x => imza(x.b.baglam) === im); return k; };
   senaryo[g] = senaryo[g] || [];
   const liste = senaryo[g];
   const kazanimlar = () => [...new Set(Object.values(senaryo).flat().flatMap(e => e.dagilim.map(d => d[0])).filter(t => t.includes(`.${g}.`)))].sort((a, b) => a.localeCompare(b, "tr", { numeric: true }));
@@ -524,13 +534,27 @@ async function senaryolarSayfasi(g) {
     }, "Kaydedildi; sınavlar ve PDF'ler yeniden üretildi."));
   }
 
+  function sinavSorulari(e) {
+    const sv = uretilen.sinavlar.find(x => x.id === `${e.donem}-${e.yazili}-${e.senaryo}`);
+    if (!sv) return `<p class="alt" style="margin-top:14px">Bu senaryonun sınavı henüz üretilmedi; kaydettikten birkaç dakika sonra soruları burada görünür.</p>`;
+    return `<h2>Bu senaryodaki sorular</h2>
+      <p class="alt">Sınavda çıkan sorular, kazanımlarıyla birlikte. Bir soruyu değiştirmek için “Soruyu düzenle”ye basın.</p>
+      <div class="yon-liste">${sv.sorular.map((q, n) => {
+        const k = havuzSira(q);
+        return `<div class="yon-oge"><span class="no">${n + 1}</span><div class="govde">
+          <b>${esc(q.kazanim)}</b> <span class="yon-rozet">${q.puan} puan</span>
+          <div class="yon-onizle" style="margin-top:6px">${q.baglam}${q.maddeler.map(m => `<p style="margin-top:6px"><b>${esc(m.h)})</b> ${m.s} <small>(${m.p} p)</small></p>`).join("")}</div></div>
+          ${k >= 0 ? `<a class="dugme ikincil kucuk" href="#/sorular/${g}/${encodeURIComponent(q.kazanim)}/${k}">Soruyu düzenle</a>` : ""}</div>`;
+      }).join("")}</div>`;
+  }
+
   function duzenle(i) {
     const son = liste.filter(x => x.donem === donemSec).pop();
     const e = i >= 0 ? kopya(liste[i]) : { donem: donemSec, yazili: son?.yazili || 1, senaryo: 1, dagilim: [["", 1]] };
     if (i < 0) e.senaryo = Math.max(0, ...liste.filter(x => x.donem === e.donem && x.yazili === e.yazili).map(x => x.senaryo)) + 1;
     const kutu = $("#duzenleyici");
     const satirlar = () => e.dagilim.map(([t, n], j) => `<div class="yon-satir" style="margin:6px 0" data-j="${j}">
-      <input type="text" list="kazliste" data-a="t" value="${esc(t)}" style="flex:1;min-width:240px" placeholder="KİM.${g}.1.1. Kazanım metni">
+      <input type="text" list="kazliste" data-a="t" value="${esc(t)}" title="${esc(t)}" style="flex:1;min-width:240px" placeholder="KİM.${g}.1.1. Kazanım metni">
       <input type="number" class="dar" min="1" max="10" data-a="n" value="${n}" style="width:80px" aria-label="Soru sayısı">
       <button class="dugme tehlike kucuk" data-ssil="${j}" aria-label="Satırı sil">✕</button></div>`).join("");
     kutu.innerHTML = `<div class="yon-kutu" id="senform"><h2 style="margin-top:0">${i >= 0 ? "Senaryoyu düzenle" : "Yeni senaryo"}</h2>
@@ -541,7 +565,8 @@ async function senaryolarSayfasi(g) {
       <label class="alan">Kazanım ve soru sayısı (kazanımı listeden seçebilir ya da tam metnini yazabilirsiniz)</label>
       <div id="satirlar">${satirlar()}</div>
       <div class="yon-arac"><button class="dugme ikincil kucuk" id="satir-ekle">+ Satır ekle</button><span id="toplam"></span></div>
-      <div class="yon-arac"><button class="dugme vurgu" id="tamam">${i >= 0 ? "Değişikliği uygula" : "Senaryoyu ekle"}</button><button class="dugme ikincil" id="vazgec">Vazgeç</button></div></div>`;
+      <div class="yon-arac"><button class="dugme vurgu" id="tamam">${i >= 0 ? "Değişikliği uygula" : "Senaryoyu ekle"}</button><button class="dugme ikincil" id="vazgec">Vazgeç</button></div>
+      ${i >= 0 ? sinavSorulari(liste[i]) : ""}</div>`;
     const oku_ = () => {
       e.donem = +$("#fdon").value; e.yazili = +$("#fyaz").value; e.senaryo = +$("#fsen").value || 1;
       e.dagilim = $$("#satirlar [data-j]").map(d => [$('[data-a="t"]', d).value.trim(), Math.max(1, parseInt($('[data-a="n"]', d).value) || 1)]);
@@ -885,7 +910,7 @@ async function yonlendir() {
   sekmeCiz(s);
   try {
     switch (s) {
-      case "sorular": return await sorularSayfasi(p[1], p[2]);
+      case "sorular": return await sorularSayfasi(p[1], p[2], p[3]);
       case "senaryolar": return await senaryolarSayfasi(p[1]);
       case "konu": return await konuSayfasi(p[1], p[2]);
       case "testler": return await testSayfasi(p[1], false, p[2]);
