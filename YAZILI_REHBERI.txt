@@ -1,92 +1,28 @@
-SHERCAN KİMYA — YAZILIYA HAZIRLIK REHBERİ
-==========================================
+SHERCAN KİMYA — YÖNETİM REHBERİ
+================================
 
-1) HANGİ DOSYA NE İŞE YARAR?
-----------------------------
-veri/yazili9.json, veri/yazili10.json, veri/yazili11.json
-    Uygulamanın okuduğu sınavlar (sorular + cevaplar + puanlar).
-    ELLE DÜZENLEMEYİN; araç tarafından üretilir.
+PANEL ADRESİ (kimseyle paylaşmayın, sitede bağlantısı yoktur):
+    https://shercan21.github.io/shercan-kimya/yonetim.html
 
-pdf/9/, pdf/10/, pdf/11/
-    İndirilen PDF'ler. Her sınav için iki dosya vardır:
-      9-sinif-1-donem-1-yazili-senaryo-3.pdf               (soru kâğıdı)
-      9-sinif-1-donem-1-yazili-senaryo-3-cevap-anahtari.pdf (cevap anahtarı)
+İlk girişte GitHub anahtarı (token) istenir; nasıl oluşturulacağı giriş
+sayfasında adım adım yazar. Anahtar yalnız o tarayıcıda saklanır.
 
-(özel kaynak deposu) yazili/9.txt, 10.txt, 11.txt      <-- SORU HAVUZU (siz bunu düzenlersiniz)
-(özel kaynak deposu) senaryo.json                      <-- SENARYO TABLOSU (siz bunu düzenlersiniz)
-(özel kaynak deposu) yazili_yap.py                     <-- JSON ve PDF üreten araç
+SEKMELER
+  Yazılı aç/kapat : Dönem/yazılı bazında öğrenciye açar veya kapatır.
+                    Kapalı yazılıların soruları ve PDF'leri sitede hiç bulunmaz.
+  Yazılı soruları : Kazanım kazanım soru ekle / düzenle / sil.
+  Senaryolar      : Ortak yazılı senaryoları (2. yazılı, 2. dönem vb.).
+  Konu anlatımı   : Ünite bölümlerini HTML olarak düzenle, önizle.
+  Testler         : Kazanım, bağlam ve sarmal testlerinin soruları.
+  Karma testler   : Karma denemeler; yenisini ekleme.
+  Etkinlikler     : Kazanım etkinlikleri.
 
+Her sekmede değişiklikler önce listede birikir; en altta beliren
+"Kaydet ve yayınla" düğmesine basınca siteye gider.
+Yazılı soruları ve senaryolar kaydedilince sınavlar ve PDF'ler GitHub'da
+kendiliğinden yeniden üretilir (2–4 dakika); panel bitmesini bekler.
 
-2) SORU HAVUZU NASIL YAZILIR? (kaynak/yazili/<sınıf>.txt)
---------------------------------------------------------
-Her soru "=== kazanım kodu" satırıyla başlar. Örnek:
-
-=== KİM.9.1.3
-Bir öğrenci üç farklı maddenin erime noktalarını ölçüyor.
-<table><tr><td>Madde</td><td>Erime noktası (°C)</td></tr><tr><td>X</td><td>801</td></tr></table>
---- a 6
-Hangi maddenin iyonik bağlı olduğunu gerekçesiyle yazınız.
->>>
-X; erime noktası yüksektir, iyonik katılar ...
---- b 4
-İkinci madde (soru metni)
->>>
-İkinci maddenin cevabı
-
-Kurallar:
-  * "=== " sonrasındaki kod, senaryo tablosundaki kazanım koduyla AYNI olmalı.
-  * İlk satırlar bağlam (giriş metni, tablo, şekil).
-  * "--- a 6"  = madde harfi + ham puan. Puanlar otomatik olarak 100'e ölçeklenir,
-    yani oranlar önemlidir, toplamın tutması gerekmez.
-  * ">>>" satırından sonrası o maddenin cevabıdır.
-  * Alt simge: H<sub>2</sub>O   Üst simge: 10<sup>−3</sup>   Ok: → ⇌
-  * Tablo için <table><tr><td>..</td></tr></table> kullanılır; ilk satır başlık olarak koyu görünür.
-  * Aynı kazanımdan, senaryolarda toplam kaç soru isteniyorsa en az o kadar soru yazın.
-    Araç soruları sırayla dağıtır, hiçbir sınavda aynı soruyu tekrar kullanmaz.
-    Yeterli soru yoksa ekrana "(tekrar)" uyarısı basar.
-
-
-3) SENARYO TABLOSU (kaynak/senaryo.json)
----------------------------------------
-Her sınıf için sınav listesi. Bir kayıt:
-
-{"donem": 1, "yazili": 2, "senaryo": 3,
- "dagilim": [["KİM.9.1.3. Kazanım metni ...", 2],
-             ["KİM.9.1.4. Kazanım metni ...", 1]]}
-
-  * donem   : 1 veya 2
-  * yazili  : 1 veya 2
-  * senaryo : senaryo numarası
-  * dagilim : [kazanım (kodla başlayan tam metin), soru sayısı]
-2. dönem senaryoları açıklandığında aynı biçimde "donem": 2 kayıtları ekleyin;
-uygulamadaki "2. Dönem" düğmesi kendiliğinden etkinleşir.
-
-
-4) DEĞİŞİKLİKTEN SONRA NE YAPILIR?
----------------------------------
-Bilgisayarda (Python 3 ve playwright kurulu ise):
-
-    cd shercan-kimya/kaynak
-    python3 yazili_yap.py .. 9,10,11 --pdf
-
-Çıktıda her sınıf için "eksik 0" görmelisiniz. Sonra değişen dosyaları
-(veri/yazili*.json, pdf/ klasörü) GitHub'a yükleyin ve sw.js içindeki
-SURUM değerini bir artırın (ör. "shercan-v4" -> "shercan-v5") ki
-öğrencilerin telefonlarındaki eski sürüm yenilensin.
-
-Daha kolayı: Claude'a "9.txt'ye şu soruları ekle / 2. dönem senaryolarını ekle"
-deyin; dosyaları o günceller ve yükler. İleride eklenecek gizli yönetici
-paneli de bu işleri tarayıcıdan yapmanızı sağlayacak.
-
-
-5) HANGİ YAZILI ÖĞRENCİYE AÇIK? (veri/ayar.json)
------------------------------------------------
-{
-  "yazili": {
-    "aktif": ["1-1"]
-  }
-}
-"dönem-yazılı" biçiminde yazılır. 1. dönem 2. yazılıyı açmak için:
-    "aktif": ["1-1", "1-2"]
-Listede olmayan yazılılar uygulamada "yakında" olarak görünür, açılamaz.
-Bu dosya önbelleğe takılmaz; değişiklik birkaç dakika içinde herkeste geçerli olur.
+DEPOLAR
+  shercan-kimya  (herkese açık) : uygulama, testler, konu, etkinlik, açık yazılılar
+  shercan-kaynak (gizli)        : yazılı soru havuzu (yazili/*.txt), senaryo.json,
+                                  bütün sınavlar ve PDF'ler (cikti/)
