@@ -1,6 +1,6 @@
 /* SHERCAN Kimya service worker: uygulama kabuğunu ve verileri önbelleğe alır, internet yokken de açılır.
    İçerik değiştiğinde SURUM'ü artır. */
-const SURUM = "shercan-v7";
+const SURUM = "shercan-v8";
 const KABUK = [
   "./", "index.html", "app.css", "app.js", "manifest.webmanifest",
   "icons/atom.webp", "icons/neon.webp", "icons/ikon-192.png", "icons/ikon-64.png",
@@ -55,6 +55,7 @@ self.addEventListener("fetch", e => {
   const url = new URL(r.url);
   const font = url.hostname.endsWith("fonts.googleapis.com") || url.hostname.endsWith("fonts.gstatic.com");
   if (url.origin !== location.origin && !font) return;
+  if (url.pathname.includes("/yonetim")) return;  /* yönetim paneli her zaman en güncel hâliyle ağdan gelir */
   if (url.pathname.endsWith("/veri/ayar.json")) {
     /* Ayarlar her zaman ağdan; internet yoksa son kaydedilen. */
     e.respondWith(fetch(r, { cache: "no-store" }).then(cev => {
