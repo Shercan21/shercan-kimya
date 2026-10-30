@@ -359,11 +359,36 @@ function gerekenler(senaryo, g) {
 async function sorularSayfasi(g, secKaz, acSira) {
   g = +g || 9;
   yukleniyor();
-  const [metin, senaryo] = await Promise.all([oku(KAYNAK, `yazili/${g}.txt`).catch(h => h.durum === 404 ? "" : Promise.reject(h)), okuJSON(KAYNAK, "senaryo.json")]);
+  const [metin, senaryo, uretilen] = await Promise.all([oku(KAYNAK, `yazili/${g}.txt`).catch(h => h.durum === 404 ? "" : Promise.reject(h)), okuJSON(KAYNAK, "senaryo.json"),
+    okuJSON(KAYNAK, `cikti/veri/yazili${g}.json`).catch(() => ({ sinavlar: [] }))]);
   const havuz = havuzCoz(metin);
+  /* hangi soru hangi senaryoda çıkıyor */
+  const imza = h => metinOzet(String(h).replace(/src="data:[^"]+"/g, ""), 120);
+  const sinavlar = uretilen.sinavlar.slice().sort((a, b) => (a.donem - b.donem) || (a.yazili - b.yazili) || (a.senaryo - b.senaryo));
+  const havuzBul = q => havuz.bloklar.findIndex(b => b.kaz === q.kazanim && imza(b.baglam) === imza(q.baglam));
+  const kullanim = {};
+  sinavlar.forEach(e => e.sorular.forEach(q => { const i = havuzBul(q); if (i >= 0) (kullanim[i] = kullanim[i] || []).push(`${e.donem}.D ${e.yazili}.Y S${e.senaryo}`); }));
+  let gorunum = depo.al("soruGorunum") || "senaryo";
+  let sinavId = depo.al("soruSinav" + g);
+  if (!sinavlar.some(e => e.id === sinavId)) sinavId = sinavlar[0]?.id;
   const { ger, ad } = gerekenler(senaryo, g);
   const kodlar = () => [...new Set([...Object.keys(ger), ...havuz.bloklar.map(b => b.kaz)])].sort((a, b) => a.localeCompare(b, "tr", { numeric: true }));
   let kaz = secKaz && kodlar().includes(secKaz) ? secKaz : kodlar()[0] || "";
+
+  function senaryoGorunumu() {
+    const e = sinavlar.find(x => x.id === sinavId);
+    return `
+      <div class="yon-arac">${sinifSecici(g)}
+        <select id="sinav" style="flex:1;min-width:220px">${sinavlar.map(x => `<option value="${x.id}"${x.id === sinavId ? " selected" : ""}>${x.donem}. Dönem ${x.yazili}. Yazılı · Senaryo ${x.senaryo}</option>`).join("")}</select></div>
+      ${e ? `<p class="alt">${e.sorular.length} soru · 100 puan. Değiştirmek istediğiniz sorunun yanındaki “Düzenle”ye basın; kaydedince bu sınav da kendiliğinden güncellenir.</p>
+      <div class="yon-liste">${e.sorular.map((q, n) => { const i = havuzBul(q); return `<div class="yon-oge"><span class="no">${n + 1}</span><div class="govde">
+        <b>${esc(q.kazanim)}</b> <span class="yon-rozet">${q.puan} puan</span>${i >= 0 && kullanim[i]?.length > 1 ? `<span class="yon-rozet">${kullanim[i].length} senaryoda</span>` : ""}
+        <div class="yon-onizle" style="margin-top:6px">${q.baglam}${q.maddeler.map(m => `<p style="margin-top:6px"><b>${esc(m.h)})</b> ${m.s} <small>(${m.p} p)</small></p>`).join("")}</div></div>
+        ${i >= 0 ? `<button class="dugme ikincil kucuk" data-duzenle="${i}">Düzenle</button>` : ""}</div>`; }).join("")}</div>`
+        : `<p class="bos">Henüz üretilmiş sınav yok.</p>`}
+      <div id="duzenleyici"></div>
+      ${kaydetCubugu()}`;
+  }
 
   function ciz() {
     const say = {}; havuz.bloklar.forEach(b => say[b.kaz] = (say[b.kaz] || 0) + 1);
@@ -371,6 +396,8 @@ async function sorularSayfasi(g, secKaz, acSira) {
     ekran.innerHTML = `
       <h1>Yazılı soruları</h1>
       <p class="alt">Her kazanım için en az senaryolarda istenen kadar soru olmalı; yoksa sorular sınavlarda tekrar eder. Kaydedince sınavlar ve PDF'ler yeniden üretilir (2–4 dk).</p>
+      <div class="cipler" style="margin-bottom:6px"><button class="cip${gorunum === "senaryo" ? " secili" : ""}" data-gor="senaryo">Senaryoya göre</button><button class="cip${gorunum === "kazanim" ? " secili" : ""}" data-gor="kazanim">Kazanıma göre</button></div>
+      ${gorunum === "senaryo" ? senaryoGorunumu() : `
       <div class="yon-arac">${sinifSecici(g)}
         <select id="kaz" style="flex:1;min-width:220px">${kodlar().map(k => {
           const v = say[k] || 0, n = ger[k] || 0;
@@ -381,19 +408,22 @@ async function sorularSayfasi(g, secKaz, acSira) {
       <div class="yon-liste">${liste.map(({ b, i }, s) => `
         <div class="yon-oge" data-i="${i}"><span class="no">${s + 1}</span>
           <div class="govde"><div class="ozet">${esc(metinOzet(b.baglam))}</div>
-            <small>${b.maddeler.map(m => `${esc(m.h)}) ${m.p}p`).join(" · ")}</small></div>
+            <small>${b.maddeler.map(m => `${esc(m.h)}) ${m.p}p`).join(" · ")} — ${kullanim[i] ? "Çıktığı sınavlar: " + kullanim[i].join(", ") : "henüz hiçbir sınavda yok"}</small></div>
           <button class="dugme ikincil kucuk" data-duzenle="${i}">Düzenle</button>
           <button class="dugme tehlike kucuk" data-sil="${i}">Sil</button></div>`).join("") || `<p class="bos">Bu kazanımda soru yok.</p>`}</div>
       <div class="yon-arac"><button class="dugme" id="yeni">+ Yeni soru</button></div>
       <div id="duzenleyici"></div>
-      ${kaydetCubugu()}`;
+      ${kaydetCubugu()}`}`;
     if (kirli) $("#kaydetcubuk").classList.remove("gizli");
     sinifDegisince($("#sinif"), v => `#/sorular/${v}`);
-    $("#kaz").addEventListener("change", e => { kaz = e.target.value; ciz(); });
-    $("#yenikaz").addEventListener("click", () => {
+    $$("[data-gor]").forEach(c => c.addEventListener("click", () => { gorunum = c.dataset.gor; depo.koy("soruGorunum", gorunum); ciz(); }));
+    $("#sinav")?.addEventListener("change", e => { sinavId = e.target.value; depo.koy("soruSinav" + g, sinavId); ciz(); });
+    $("#kaz")?.addEventListener("change", e => { kaz = e.target.value; ciz(); });
+    $("#yenikaz")?.addEventListener("click", () => {
       const k = prompt("Kazanım kodu (ör. KİM.11.2.4):", `KİM.${g}.`);
       if (k && k.trim()) { kaz = k.trim(); ciz(); }
     });
+    if (acSira !== undefined && gorunum !== "kazanim") { gorunum = "kazanim"; return ciz(); }
     if (acSira !== undefined) {
       const hedef = havuz.bloklar.map((b, i) => ({ b, i })).filter(x => x.b.kaz === kaz)[+acSira];
       acSira = undefined;
@@ -404,7 +434,7 @@ async function sorularSayfasi(g, secKaz, acSira) {
       havuz.bloklar.splice(+d.dataset.sil, 1); degisti(); ciz();
     }));
     $$("[data-duzenle]").forEach(d => d.addEventListener("click", () => duzenle(+d.dataset.duzenle)));
-    $("#yeni").addEventListener("click", () => duzenle(-1));
+    $("#yeni")?.addEventListener("click", () => duzenle(-1));
     $("#kaydet").addEventListener("click", e => islem(e.target, async () => {
       await kaynagaKaydetVeYayinla([{ yol: `yazili/${g}.txt`, metin: havuzYaz(havuz) }], `${g}. sınıf yazılı soruları güncellendi`);
       $("#kaydetcubuk").classList.add("gizli");
