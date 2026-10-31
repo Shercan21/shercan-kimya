@@ -782,7 +782,7 @@ function yaziliSayfasi(g, id) {
 /* ================= yönlendirme ================= */
 /* ================= ziyaret sayacı =================
    GoatCounter: çerez kullanmaz, kişisel bilgi toplamaz; yalnız kaç kez açıldığını sayar.
-   İstatistikler: https://shercan.goatcounter.com */
+   İstatistikler: https://shercankimya.goatcounter.com */
 const sayacKuyruk = [];
 function say(yol, baslik, olay) {
   const v = { path: yol, title: baslik || yol, event: !!olay };
