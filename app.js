@@ -780,7 +780,27 @@ function yaziliSayfasi(g, id) {
 }
 
 /* ================= yönlendirme ================= */
+/* ================= ziyaret sayacı =================
+   GoatCounter: çerez kullanmaz, kişisel bilgi toplamaz; yalnız kaç kez açıldığını sayar.
+   İstatistikler: https://shercan.goatcounter.com */
+const sayacKuyruk = [];
+function say(yol, baslik, olay) {
+  const v = { path: yol, title: baslik || yol, event: !!olay };
+  try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count(v); else sayacKuyruk.push(v); } catch {}
+}
+window.sayacHazir = () => { try { while (sayacKuyruk.length) window.goatcounter.count(sayacKuyruk.shift()); } catch {} };
+const uygulamaModu = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+try {
+  if (uygulamaModu() && !sessionStorage.getItem("shr_acilis_sayildi")) {
+    sessionStorage.setItem("shr_acilis_sayildi", "1");
+    say("uygulama-acilisi", "Uygulama olarak açıldı (ana ekrandan)", true);
+  }
+} catch {}
+addEventListener("appinstalled", () => say("kurulum", "Ana ekrana eklendi (kurulum)", true));
+let sonSayilan = "";
+
 function yonlendir() {
+  { const yol = "/" + location.hash.replace(/^#\/?/, "").split("?")[0]; if (yol !== sonSayilan) { sonSayilan = yol; setTimeout(() => say(yol, document.title), 300); } }
   const [yol, sorgu] = location.hash.replace(/^#\/?/, "").split("?");
   const p = yol.split("/").filter(Boolean);
   const k = new URLSearchParams(sorgu || "").get("k");

@@ -1,6 +1,6 @@
 /* SHERCAN Kimya service worker: uygulama kabuğunu ve verileri önbelleğe alır, internet yokken de açılır.
    İçerik değiştiğinde SURUM'ü artır. */
-const SURUM = "shercan-v8";
+const SURUM = "shercan-v9";
 const KABUK = [
   "./", "index.html", "app.css", "app.js", "manifest.webmanifest",
   "icons/atom.webp", "icons/neon.webp", "icons/ikon-192.png", "icons/ikon-64.png",
